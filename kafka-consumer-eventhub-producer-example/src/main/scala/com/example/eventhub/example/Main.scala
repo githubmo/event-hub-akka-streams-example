@@ -21,7 +21,7 @@ object Main extends App with StrictLogging {
   def randomString   = Random.alphanumeric.take(10).mkString
   val eventHubStream = new EventHubStream(appConfig.eventHub)
 
-  val numberOfBytesSent = Source(1 until 100)
+  val numberOfBytesSent = Source(1 to 10)
     .map(_ => new EventData(randomString.getBytes))
     .via(eventHubStream.singleEventFlow)
     .runWith(Sink.last)
