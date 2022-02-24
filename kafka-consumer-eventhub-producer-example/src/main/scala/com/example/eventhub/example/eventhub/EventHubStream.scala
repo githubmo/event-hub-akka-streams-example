@@ -7,6 +7,7 @@ import com.azure.messaging.eventhubs.{ EventData, EventDataBatch, EventHubClient
 import com.example.eventhub.example.config.EventHub as EventHubConfig
 import com.example.eventhub.example.eventhub.EventHubStream.*
 import com.typesafe.scalalogging.StrictLogging
+import reactor.core.publisher.Mono
 
 class EventHubStream(eventHubConfig: EventHubConfig) extends StrictLogging {
 
@@ -18,24 +19,52 @@ class EventHubStream(eventHubConfig: EventHubConfig) extends StrictLogging {
   // https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-quotas
   // Be aware that 1MB is the limit of the batch, not just a single message that gets published to eventhub
 
+  def createBatch(bytesSeq: Seq[Array[Byte]]): Source[EventDataBatch, NotUsed] = {
+    Source
+      .fromPublisher {
+        logger.info(s"Creating a batch from ${bytesSeq.length} elements")
+        producer.createBatch(options)
+      }
+      .map { batch =>
+        bytesSeq.foreach(bytes => batch.tryAdd(new EventData(bytes)))
+        batch
+      }
+  }
+
   // A flow that publishes to event hub and returns the number of messages published
   val batchFlow: Flow[EventDataBatch, PublishedEventsMetadata, NotUsed] = Flow[EventDataBatch].flatMapConcat { batch =>
     Source
-      .fromPublisher(producer.send(batch))
+      .fromPublisher {
+        logger.info(s"Attempting to send ${batch.getCount} events to Event Hub")
+        producer.send(batch).doOnSuccess(_ => logger.info("batch event sent")).`then`(Mono.just(true))
+      }
       .map(_ => PublishedEventsMetadata(numberOfEvents = batch.getCount, sizeInBytes = batch.getSizeInBytes))
   }
 
   // A flow that publishes a single event to eventhub
   val singleEventFlow: Flow[EventData, PublishedEventsMetadata, NotUsed] = Flow[EventData].flatMapConcat { eventData =>
     Source
-      .fromPublisher(producer.send(java.util.Collections.singleton(eventData)).map(_ => logger.info("sent an event")))
+      .fromPublisher {
+        logger.info("Attempting to send a single event")
+        producer
+          .send(java.util.Collections.singleton(eventData))
+          .doOnSuccess(_ => logger.info("single event sent"))
+          .`then`(Mono.just(true))
+      }
       .map(_ => PublishedEventsMetadata(numberOfEvents = 1, eventData.getBody.length))
+  }
+
+  def singleEventSource(bytes: Array[Byte]) = {
+    Source.single(new EventData(bytes)).via(singleEventFlow)
   }
 }
 
 object EventHubStream {
 
-  case class PublishedEventsMetadata(numberOfEvents: Int, sizeInBytes: Int)
+  case class PublishedEventsMetadata(numberOfEvents: Int, sizeInBytes: Int) {
+    def add(other: PublishedEventsMetadata): PublishedEventsMetadata =
+      PublishedEventsMetadata(numberOfEvents + other.numberOfEvents, sizeInBytes + other.sizeInBytes)
+  }
 
   private[eventhub] def createEventHubAsyncProducerClient(eventHubConfig: EventHubConfig): EventHubProducerAsyncClient =
     new EventHubClientBuilder()

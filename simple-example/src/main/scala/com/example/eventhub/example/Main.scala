@@ -26,7 +26,6 @@ object Main extends App with StrictLogging {
     .map(_ => new EventData(randomString.getBytes))
     .via(eventHubStream.singleEventFlow)
     .runWith(Sink.last)
-    .map(_ => logger.info("sent stuff"))
 
   val numberOfBatchBytesSentF =
     Source(1 to 10)
@@ -34,7 +33,8 @@ object Main extends App with StrictLogging {
       .grouped(5)
       .flatMapConcat(bytesSeq => eventHubStream.createBatch(bytesSeq))
       .via(eventHubStream.batchFlow)
-      .runWith(Sink.last)
-      .map(_ => logger.info("sent batch stuff"))
-      .map(_ => logger.info("sent batch stuff"))
+      .runReduce((a, b) => a.add(b))
+      .map(result => logger.info(s"Sent ${result.sizeInBytes} bytes from ${result.numberOfEvents} events"))
+      .recover(e => logger.error("ouch", e))
+
 }

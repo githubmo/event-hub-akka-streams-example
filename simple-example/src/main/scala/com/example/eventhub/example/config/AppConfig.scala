@@ -3,10 +3,9 @@ package com.example.eventhub.example.config
 import pureconfig.*
 import pureconfig.generic.auto.*
 
-final case class Topics(telemetry: String)
 final case class EventHub(connectionString: String, eventHubName: String, consumerGroup: String)
 
-final case class AppConfig(topics: Topics, eventHub: EventHub)
+final case class AppConfig(eventHub: EventHub)
 
 object AppConfig {
   def load(): AppConfig = ConfigSource.default.load[AppConfig] match {

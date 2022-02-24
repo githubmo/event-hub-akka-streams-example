@@ -48,7 +48,7 @@ class EventHubStream(eventHubConfig: EventHubConfig) extends StrictLogging {
         logger.info("Attempting to send a single event")
         producer
           .send(java.util.Collections.singleton(eventData))
-          .doOnSuccess(_ => logger.info("batch event sent"))
+          .doOnSuccess(_ => logger.info("single event sent"))
           .`then`(Mono.just(true))
       }
       .map(_ => PublishedEventsMetadata(numberOfEvents = 1, eventData.getBody.length))
@@ -57,7 +57,10 @@ class EventHubStream(eventHubConfig: EventHubConfig) extends StrictLogging {
 
 object EventHubStream {
 
-  case class PublishedEventsMetadata(numberOfEvents: Int, sizeInBytes: Int)
+  case class PublishedEventsMetadata(numberOfEvents: Int, sizeInBytes: Int) {
+    def add(other: PublishedEventsMetadata): PublishedEventsMetadata =
+      PublishedEventsMetadata(numberOfEvents + other.numberOfEvents, sizeInBytes + other.sizeInBytes)
+  }
 
   private[eventhub] def createEventHubAsyncProducerClient(eventHubConfig: EventHubConfig): EventHubProducerAsyncClient =
     new EventHubClientBuilder()
