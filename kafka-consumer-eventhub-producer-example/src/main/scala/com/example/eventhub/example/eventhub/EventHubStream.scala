@@ -13,7 +13,10 @@ class EventHubStream(eventHubConfig: EventHubConfig) extends StrictLogging {
 
   lazy val producer = EventHubStream.createEventHubAsyncProducerClient(eventHubConfig)
 
-  val options = new CreateBatchOptions().setMaximumSizeInBytes(1024 * 1024) // 1MB is 1024*1024 bytes
+  def options(key: Option[String] = None) = key match {
+    case None    => new CreateBatchOptions().setMaximumSizeInBytes(1024 * 1024) // 1MB is 1024*1024 bytes
+    case Some(p) => new CreateBatchOptions().setMaximumSizeInBytes(1024 * 1024).setPartitionKey(p)
+  }
 
   // Be aware that we have limitations in maximum size of events and batch
   // https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-quotas
@@ -23,7 +26,19 @@ class EventHubStream(eventHubConfig: EventHubConfig) extends StrictLogging {
     Source
       .fromPublisher {
         logger.info(s"Creating a batch from ${bytesSeq.length} elements")
-        producer.createBatch(options)
+        producer.createBatch(options())
+      }
+      .map { batch =>
+        bytesSeq.foreach(bytes => batch.tryAdd(new EventData(bytes)))
+        batch
+      }
+  }
+
+  def createBatch(bytesSeq: Seq[Array[Byte]], key: String): Source[EventDataBatch, NotUsed] = {
+    Source
+      .fromPublisher {
+        logger.info(s"Creating a batch from ${bytesSeq.length} elements")
+        producer.createBatch(options(Some(key)))
       }
       .map { batch =>
         bytesSeq.foreach(bytes => batch.tryAdd(new EventData(bytes)))
@@ -56,6 +71,10 @@ class EventHubStream(eventHubConfig: EventHubConfig) extends StrictLogging {
 
   def singleEventSource(bytes: Array[Byte]) = {
     Source.single(new EventData(bytes)).via(singleEventFlow)
+  }
+
+  def singleEventSource(bytes: Array[Byte], key: String) = {
+    createBatch(Seq(bytes), key).via(batchFlow)
   }
 }
 

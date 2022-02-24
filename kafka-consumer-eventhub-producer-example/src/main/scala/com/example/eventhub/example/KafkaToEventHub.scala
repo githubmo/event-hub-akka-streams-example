@@ -23,6 +23,14 @@ class KafkaToEventHub(alpakkaKafka: AlpakkaKafka, eventHubStream: EventHubStream
     }
     .to(alpakkaKafka.byteArrayProducer)
 
+  def singleGraphWithPartitionKey = alpakkaKafka
+    .byteArrayConsumer(inputTopic)
+    .mapMaterializedValue(c => innerControl.set(c))
+    .flatMapConcat { msg =>
+      createEventHubSource(eventHubStream, msg.record.value, msg.committableOffset, Some(msg.record.key()))
+    }
+    .to(alpakkaKafka.byteArrayProducer)
+
   def stop = innerControl.get().shutdown()
 }
 
@@ -30,10 +38,23 @@ object KafkaToEventHub {
   def createEventHubSource(
       eventHub: EventHubStream,
       bytes: Array[Byte],
-      committableOffset: ConsumerMessage.CommittableOffset)
+      committableOffset: ConsumerMessage.CommittableOffset,
+      maybeKey: Option[String] = None)
       : Source[ProducerMessage.Envelope[String, Array[Byte], ConsumerMessage.CommittableOffset], NotUsed] = {
-    eventHub
-      .singleEventSource(bytes)
-      .map(_ => ProducerMessage.passThrough[String, Array[Byte], ConsumerMessage.CommittableOffset](committableOffset))
+
+    maybeKey match {
+      case Some(key) =>
+        eventHub
+          .singleEventSource(bytes, key)
+          .map(_ =>
+            ProducerMessage.passThrough[String, Array[Byte], ConsumerMessage.CommittableOffset](committableOffset))
+
+      case None =>
+        eventHub
+          .singleEventSource(bytes)
+          .map(_ =>
+            ProducerMessage.passThrough[String, Array[Byte], ConsumerMessage.CommittableOffset](committableOffset))
+    }
+
   }
 }
