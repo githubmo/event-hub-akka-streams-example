@@ -1,0 +1,55 @@
+*.class
+*.log
+
+# Gradle specific
+.gradle
+**/build/
+
+# sbt specific
+.bsp/
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+
+# Scala-IDE specific
+.scala_dependencies
+.target
+.cache
+.classpath
+.project
+.settings/
+.bps/
+
+# Intellij specific
+*.iml
+*.idea/
+*.idea_modules/
+
+# Scala Metals specific
+.metals/
+.bloop/
+metals.sbt
+coursier
+
+# Sublime specific
+*.sublime-project
+*.sublime-workspace
+
+# VS Code specific
+.vscode/
+.history/
+
+# OS specific
+.DS_Store
+
+# Cinnamon local dev
+cinnamon-prometheus-docker-sandbox*/
+
+# Minio DB
+data/db/*
+
+# scripts with sensitive data
+scripts/*.sh
