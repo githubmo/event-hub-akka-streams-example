@@ -14,7 +14,7 @@ lazy val root =
 
 lazy val simpleExample =
   (project in file("simple-example"))
-    .settings(name := "Event Hub Simple Example", libraryDependencies ++= allDeps)
+    .settings(name := "Event Hub Simple Example", libraryDependencies ++= allDeps :+ scalaLogging)
     .settings(commonSettings)
 
 lazy val kafkaExamples =
