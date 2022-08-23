@@ -21,11 +21,18 @@ public class ExampleEventHubWithAkkaStreams {
 
         var system = ActorSystem.create();
 
+//        var completionStage = Source
+//                .from(Stream.generate(() -> randomString()).limit(10).toList())
+//                .map(s -> new EventHubStreamData(s.getBytes(StandardCharsets.UTF_8), Optional.of(s.substring(0, 1))))
+//                .toMat(eventHubStreamProducer.singleEventSink, Keep.right())
+//                .run(system);
+
         var completionStage = Source
-                .from(Stream.generate(() -> randomString()).limit(10).toList())
+                .from(Stream.generate(() -> randomString()).limit(100).toList())
                 .map(s -> new EventHubStreamData(s.getBytes(StandardCharsets.UTF_8), Optional.of(s.substring(0, 1))))
-                .toMat(eventHubStreamProducer.singleEventSink, Keep.right())
+                .toMat(eventHubStreamProducer.batchEventSink, Keep.right())
                 .run(system);
+
 
         completionStage.toCompletableFuture().join(); // asynchronous wait
         system.terminate();

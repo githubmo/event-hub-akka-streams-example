@@ -15,10 +15,12 @@ import com.example.config.EventHubConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
+import scala.Tuple2;
 
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class EventHubStreamProducer {
@@ -54,20 +56,26 @@ public class EventHubStreamProducer {
                 ); // this is to stop the fire and forget nature of `Mono<Void>`
             }).toMat(Sink.ignore(), Keep.right());
 
-    // Batch events
-    // IGNORING KEY, need to think of a way where I can batch with key
-    // TODO: Improve and find a way to batch with key
+    // Sending batched events with keys
+    // if you send an `Iterable<EventHub>` to `producerAsyncClient.send`, it will use a batch event to send the events
     public final Sink<EventHubStreamData, CompletionStage<Done>> batchEventSink =
-            Flow.of(EventHubStreamData.class)
-                    .groupedWeightedWithin((long) MEGA_BYTE, e -> (long) e.bytes().length, Duration.ofSeconds(5))
-                    .flatMapConcat(dataList -> {
-                        return Source
-                                .fromPublisher(producerAsyncClient.createBatch(batchOptions))
-                                .map(b -> {
-                                    dataList.forEach(e -> b.tryAdd(new EventData(e.bytes())));
-                                    return b;
-                                });
-                    }).toMat(Sink.ignore(), Keep.right());
-
-
+        Flow.of(EventHubStreamData.class)
+            .groupedWeightedWithin((long) MEGA_BYTE, e -> (long) e.bytes().length, Duration.ofSeconds(5))
+            .mapConcat(eList -> {
+                return eList.stream()
+                        .collect(Collectors.groupingBy(e -> e.partitionKey().orElse("")))
+                        .entrySet();
+            })
+            .flatMapConcat(entrySet -> {
+                var events = entrySet.getValue().stream().map(e -> new EventData(e.bytes())).toList();
+                var sendOption = new SendOptions();
+                if (!entrySet.getKey().isBlank()) {
+                    sendOption.setPartitionKey(entrySet.getKey());
+                }
+                return Source
+                        .fromPublisher(
+                                producerAsyncClient.send(events, sendOption)
+                                        .doOnSuccess(unused -> logger.info("batch event sent"))
+                                        .then(Mono.just(true)));
+            }).toMat(Sink.ignore(), Keep.right());
 }
