@@ -28,12 +28,14 @@ public class ExampleEventHubWithAkkaStreams {
 
         var system = ActorSystem.create();
 
-//        var completionStage = Source
+        // Single event sent at a time
+//        var producerCompletionStage = Source
 //                .from(Stream.generate(() -> randomString()).limit(10).toList())
 //                .map(s -> new EventHubStreamData(s.getBytes(StandardCharsets.UTF_8), Optional.of(s.substring(0, 1))))
 //                .toMat(eventHubStreamProducer.singleEventSink, Keep.right())
 //                .run(system);
 
+        // events sent in batches
         var producerCompletionStage = Source
                 .from(Stream.generate(ExampleEventHubWithAkkaStreams::randomString).limit(10).toList())
                 .map(s -> new EventHubStreamData(s.getBytes(StandardCharsets.UTF_8), Optional.of(s.substring(0, 1))))
