@@ -7,20 +7,16 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.azure.messaging.eventhubs.EventData;
-import com.azure.messaging.eventhubs.EventDataBatch;
 import com.azure.messaging.eventhubs.EventHubProducerAsyncClient;
 import com.azure.messaging.eventhubs.models.CreateBatchOptions;
 import com.azure.messaging.eventhubs.models.SendOptions;
-import com.example.config.EventHubConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
-import scala.Tuple2;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.Collections;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class EventHubStreamProducer {
