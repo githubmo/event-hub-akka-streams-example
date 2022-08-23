@@ -45,8 +45,12 @@ public class EventHubStreamProducer {
                 if (data.partitionKey().isPresent()) {
                     sendOptions.setPartitionKey(data.partitionKey().get());
                 }
-                return Source.fromPublisher(producerAsyncClient
-                    .send(Collections.singleton(new EventData(data.bytes())), sendOptions)
+                // Azure sdk gives us 3 things
+                // Mono<Void> // fire and forget producer
+                // Mono<T> // a single response to say something is successful or not
+                // Flux<T> // a stream of data
+                // So we use a `Source::fromPublisher` because we want to make sure that we get back the result of the api call
+                return Source.fromPublisher(producerAsyncClient.send(Collections.singleton(new EventData(data.bytes())), sendOptions)
                     .doOnSuccess(unused -> logger.info("single event sent"))
                     .then(Mono.just(true))
                 ); // this is to stop the fire and forget nature of `Mono<Void>`
@@ -56,7 +60,7 @@ public class EventHubStreamProducer {
     // if you send an `Iterable<EventHub>` to `producerAsyncClient.send`, it will use a batch event to send the events
     public final Sink<EventHubStreamData, CompletionStage<Done>> batchEventSink =
         Flow.of(EventHubStreamData.class)
-            .groupedWeightedWithin((long) MEGA_BYTE, e -> (long) e.bytes().length, Duration.ofSeconds(5))
+            .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.bytes().length, Duration.ofSeconds(5))
             .mapConcat(eList -> {
                 return eList.stream()
                         .collect(Collectors.groupingBy(e -> e.partitionKey().orElse("")))
@@ -72,6 +76,6 @@ public class EventHubStreamProducer {
                         .fromPublisher(
                                 producerAsyncClient.send(events, sendOption)
                                         .doOnSuccess(unused -> logger.info("batch event sent"))
-                                        .then(Mono.just(true)));
+                                        .then(Mono.just(true))); // a little trick to avoid the "fire and forget" nature of Mono<Void>
             }).toMat(Sink.ignore(), Keep.right());
 }

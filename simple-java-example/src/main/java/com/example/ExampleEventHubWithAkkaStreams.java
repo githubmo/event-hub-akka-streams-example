@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 public class ExampleEventHubWithAkkaStreams {
 
-    private static Logger logger = LoggerFactory.getLogger("ExampleEventHubWithAkkaStreams");
+    private static final Logger logger = LoggerFactory.getLogger("ExampleEventHubWithAkkaStreams");
 
     public static void main(String[] args) {
         var eventHubAsyncFactory = new EventHubAsyncFactory(AppConfig.eventHubConfig);
