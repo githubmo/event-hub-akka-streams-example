@@ -18,13 +18,6 @@ object Dependencies {
   // SBT test
   val scalaTest = "org.scalatest" %% "scalatest" % "3.2.9"
 
-  val allDeps = Seq(
-    azureMessagingEventHub,
-    akkaStream,
-    akkaStreamKafka,
-    typesafeConfig,
-    pureConfig,
-    logbackClassic,
-    scalaLogging,
-    scalaTest)
+  val allDeps =
+    Seq(azureMessagingEventHub, akkaStream, akkaStreamKafka, typesafeConfig, pureConfig, logbackClassic, scalaTest)
 }

@@ -19,5 +19,5 @@ object ProduceTelemetry extends App {
 
   def randomStringBytes = Random.alphanumeric.take(2000).mkString.getBytes()
 
-  (1 until 100).foreach(_ => kafkaProducer.send(new ProducerRecord[String, Array[Byte]](topic, randomStringBytes)))
+  (1 until 10000).foreach(_ => kafkaProducer.send(new ProducerRecord[String, Array[Byte]](topic, randomStringBytes)))
 }

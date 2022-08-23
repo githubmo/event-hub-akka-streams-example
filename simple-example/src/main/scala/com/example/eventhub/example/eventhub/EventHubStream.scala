@@ -11,9 +11,10 @@ import reactor.core.publisher.Mono
 
 class EventHubStream(eventHubConfig: EventHubConfig) extends StrictLogging {
 
-  lazy val producer = EventHubStream.createEventHubAsyncProducerClient(eventHubConfig)
+  lazy val producer: EventHubProducerAsyncClient = EventHubStream.createEventHubAsyncProducerClient(eventHubConfig)
 
-  val options = new CreateBatchOptions().setMaximumSizeInBytes(1024 * 1024) // 1MB is 1024*1024 bytes
+  val options: CreateBatchOptions =
+    new CreateBatchOptions().setMaximumSizeInBytes(1024 * 1024) // 1MB is 1024*1024 bytes
 
   // Be aware that we have limitations in maximum size of events and batch
   // https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-quotas

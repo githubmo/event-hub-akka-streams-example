@@ -19,5 +19,14 @@ lazy val simpleExample =
 
 lazy val kafkaExamples =
   (project in file("kafka-consumer-eventhub-producer-example"))
-    .settings(name := "Event Hub Simple Example", libraryDependencies ++= allDeps)
+    .settings(name := "Event Hub with Kafka Example", libraryDependencies ++= allDeps :+ scalaLogging)
+    .settings(commonSettings)
+
+lazy val javaSimpleExample =
+  (project in file("simple-java-example"))
+    .settings(
+      name := "Java Event Hub Example",
+      libraryDependencies ++= allDeps,
+      crossPaths       := false,
+      autoScalaLibrary := false)
     .settings(commonSettings)
