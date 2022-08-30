@@ -2,7 +2,8 @@ import sbt._
 
 object Dependencies {
   // Azure Eventhub
-  val azureMessagingEventHub = "com.azure" % "azure-messaging-eventhubs" % "5.11.0"
+  val azureMessagingEventHub      = "com.azure" % "azure-messaging-eventhubs"                      % "5.13.0"
+  val azureEventhubBlobCheckpoint = "com.azure" % "azure-messaging-eventhubs-checkpointstore-blob" % "1.15.0"
 
   // Akka Stream and Alpakka Kafka
   val akkaStream      = "com.typesafe.akka" %% "akka-stream"       % "2.6.18"
@@ -12,12 +13,20 @@ object Dependencies {
   val typesafeConfig = "com.typesafe"           % "config"     % "1.4.2"
   val pureConfig     = "com.github.pureconfig" %% "pureconfig" % "0.17.1"
   // logging
-  val logbackClassic = "ch.qos.logback"              % "logback-classic" % "1.2.10"
-  val scalaLogging   = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.4"
+  val logbackClassic = "ch.qos.logback"              % "logback-classic" % "1.2.11"
+  val scalaLogging   = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.5"
 
   // SBT test
-  val scalaTest = "org.scalatest" %% "scalatest" % "3.2.9"
+  val scalaTest = "org.scalatest" %% "scalatest" % "3.2.12" % Test
 
-  val allDeps =
-    Seq(azureMessagingEventHub, akkaStream, akkaStreamKafka, typesafeConfig, pureConfig, logbackClassic, scalaTest)
+  val allDeps: Seq[ModuleID] =
+    Seq(
+      azureMessagingEventHub,
+      azureEventhubBlobCheckpoint,
+      akkaStream,
+      akkaStreamKafka,
+      typesafeConfig,
+      pureConfig,
+      logbackClassic,
+      scalaTest)
 }

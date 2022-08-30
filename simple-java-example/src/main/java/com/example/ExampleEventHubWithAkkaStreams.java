@@ -36,11 +36,11 @@ public class ExampleEventHubWithAkkaStreams {
 //                .run(system);
 
         // events sent in batches
-        var producerCompletionStage = Source
-                .from(Stream.generate(ExampleEventHubWithAkkaStreams::randomString).limit(10).toList())
-                .map(s -> new EventHubStreamData(s.getBytes(StandardCharsets.UTF_8), Optional.of(s.substring(0, 1))))
-                .toMat(eventHubStreamProducer.batchEventSink, Keep.right())
-                .run(system);
+//        var producerCompletionStage = Source
+//                .from(Stream.generate(ExampleEventHubWithAkkaStreams::randomString).limit(1000).toList())
+//                .map(s -> new EventHubStreamData(s.getBytes(StandardCharsets.UTF_8), Optional.of(s.substring(0, 1))))
+//                .toMat(eventHubStreamProducer.batchEventSink, Keep.right())
+//                .run(system);
 
         var consumerCompletionStage = eventHubStreamConsumer.eventHubEvents()
                         .toMat(Sink.foreach(e -> {
@@ -52,9 +52,10 @@ public class ExampleEventHubWithAkkaStreams {
                         }), Keep.right())
                         .run(system);
 
-        producerCompletionStage.toCompletableFuture().join(); // asynchronous wait
+        consumerCompletionStage.toCompletableFuture().join(); // asynchronous wait
         system.terminate();
         system.getWhenTerminated().toCompletableFuture().join();
+        System.exit(0);
     }
 
     private static final Random random = new Random();

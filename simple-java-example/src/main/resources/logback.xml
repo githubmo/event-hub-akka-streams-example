@@ -7,6 +7,7 @@
     <logger name="org.apache.kafka" level="${KAFKA_LOGBACK_LOG_LEVEL:-WARN}"/>
     <logger name="org.apache.kafka.clients.consumer.internals" level="WARN"/>
     <logger name="org.apache.kafka.common.metrics" level="WARN"/>
+    <logger name="com.azure.core.amqp" level="WARN"/>
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
     </root>

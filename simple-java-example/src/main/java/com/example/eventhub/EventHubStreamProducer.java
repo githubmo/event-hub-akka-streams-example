@@ -58,24 +58,29 @@ public class EventHubStreamProducer {
 
     // Sending batched events with keys
     // if you send an `Iterable<EventHub>` to `producerAsyncClient.send`, it will use a batch event to send the events
+    public final Flow<EventHubStreamData, Boolean, NotUsed> batchFlow =
+            Flow.of(EventHubStreamData.class)
+                    .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.bytes().length, Duration.ofSeconds(1))
+                    .mapConcat(eList -> {
+                        return eList.stream()
+                                .collect(Collectors.groupingBy(e -> e.partitionKey().orElse("")))
+                                .entrySet();
+                    })
+                    .flatMapConcat(entrySet -> {
+                        var events = entrySet.getValue().stream().map(e -> new EventData(e.bytes())).toList();
+                        var sendOption = new SendOptions();
+                        if (!entrySet.getKey().isBlank()) {
+                            sendOption.setPartitionKey(entrySet.getKey());
+                        }
+                        return Source
+                                .fromPublisher(
+                                        producerAsyncClient.send(events, sendOption)
+                                                .doOnSuccess(unused -> logger.info("batch event sent"))
+                                                .then(Mono.just(true))); // a little trick to avoid the "fire and forget" nature of Mono<Void>
+                    });
+
+    // Sending batched events with keys
+    // if you send an `Iterable<EventHub>` to `producerAsyncClient.send`, it will use a batch event to send the events
     public final Sink<EventHubStreamData, CompletionStage<Done>> batchEventSink =
-        Flow.of(EventHubStreamData.class)
-            .groupedWeightedWithin(MEGA_BYTE, e -> (long) e.bytes().length, Duration.ofSeconds(5))
-            .mapConcat(eList -> {
-                return eList.stream()
-                        .collect(Collectors.groupingBy(e -> e.partitionKey().orElse("")))
-                        .entrySet();
-            })
-            .flatMapConcat(entrySet -> {
-                var events = entrySet.getValue().stream().map(e -> new EventData(e.bytes())).toList();
-                var sendOption = new SendOptions();
-                if (!entrySet.getKey().isBlank()) {
-                    sendOption.setPartitionKey(entrySet.getKey());
-                }
-                return Source
-                        .fromPublisher(
-                                producerAsyncClient.send(events, sendOption)
-                                        .doOnSuccess(unused -> logger.info("batch event sent"))
-                                        .then(Mono.just(true))); // a little trick to avoid the "fire and forget" nature of Mono<Void>
-            }).toMat(Sink.ignore(), Keep.right());
+        batchFlow.toMat(Sink.ignore(), Keep.right());
 }
