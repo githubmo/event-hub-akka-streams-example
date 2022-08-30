@@ -36,23 +36,23 @@ public class ExampleEventHubWithAkkaStreams {
 //                .run(system);
 
         // events sent in batches
-//        var producerCompletionStage = Source
-//                .from(Stream.generate(ExampleEventHubWithAkkaStreams::randomString).limit(1000).toList())
-//                .map(s -> new EventHubStreamData(s.getBytes(StandardCharsets.UTF_8), Optional.of(s.substring(0, 1))))
-//                .toMat(eventHubStreamProducer.batchEventSink, Keep.right())
-//                .run(system);
+        var producerCompletionStage = Source
+                .from(Stream.generate(ExampleEventHubWithAkkaStreams::randomString).limit(1000).toList())
+                .map(s -> new EventHubStreamData(s.getBytes(StandardCharsets.UTF_8), Optional.of(s.substring(0, 1))))
+                .toMat(eventHubStreamProducer.batchEventSink, Keep.right())
+                .run(system);
 
-        var consumerCompletionStage = eventHubStreamConsumer.eventHubEvents()
-                        .toMat(Sink.foreach(e -> {
-                            var value = new String(e.bytes(), StandardCharsets.UTF_8);
-                            var key = e.partitionKey().orElse("");
-                            // eventhub hashes the key we give it into a partition number
-                            // so here the key printed would be a string representation of the partition number
-                            logger.info("Received {} from Event Hub with key {}", value, key);
-                        }), Keep.right())
-                        .run(system);
+//        var consumerCompletionStage = eventHubStreamConsumer.eventHubEvents()
+//                        .toMat(Sink.foreach(e -> {
+//                            var value = new String(e.bytes(), StandardCharsets.UTF_8);
+//                            var key = e.partitionKey().orElse("");
+//                            // eventhub hashes the key we give it into a partition number
+//                            // so here the key printed would be a string representation of the partition number
+//                            logger.info("Received {} from Event Hub with key {}", value, key);
+//                        }), Keep.right())
+//                        .run(system);
 
-        consumerCompletionStage.toCompletableFuture().join(); // asynchronous wait
+        producerCompletionStage.toCompletableFuture().join(); // asynchronous wait
         system.terminate();
         system.getWhenTerminated().toCompletableFuture().join();
         System.exit(0);

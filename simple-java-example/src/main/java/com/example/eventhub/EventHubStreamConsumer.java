@@ -3,7 +3,6 @@ package com.example.eventhub;
 import akka.NotUsed;
 import akka.stream.javadsl.Source;
 import com.azure.messaging.eventhubs.EventHubConsumerAsyncClient;
-import com.azure.messaging.eventhubs.EventHubProducerAsyncClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

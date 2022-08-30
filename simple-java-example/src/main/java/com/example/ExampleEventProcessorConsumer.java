@@ -50,7 +50,8 @@ public class ExampleEventProcessorConsumer {
         );
 
         eventProcessorConsumer.start();
-        system.scheduler().scheduleOnce(Duration.ofSeconds(30), eventProcessorConsumer::stop, system.dispatcher());
+        Runtime.getRuntime().addShutdownHook(new Thread(eventProcessorConsumer::stop));
+//        system.scheduler().scheduleOnce(Duration.ofSeconds(30), eventProcessorConsumer::stop, system.dispatcher());
 //        system.terminate();
 //        system.getWhenTerminated().toCompletableFuture().join();
 //        System.exit(0);

@@ -9,7 +9,7 @@ public record BlobStorageConfig(String connectionString, String container, Strin
         Arrays.asList(connectionString, container, sasToken).forEach(s -> {
             Objects.requireNonNull(s);
             if (s.trim().isBlank()) {
-                throw new IllegalArgumentException("Configuration for eventhub cannot be empty");
+                throw new IllegalArgumentException("Configuration for blob storage cannot be empty");
             }
         });
     }

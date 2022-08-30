@@ -46,7 +46,7 @@ public class EventProcessorConsumer {
                                   ) {
 
       this.blobContainerAsyncClient = new BlobContainerClientBuilder()
-              .connectionString(blobStorageConfig.connectionString())
+              .endpoint(blobStorageConfig.connectionString())
               .containerName(blobStorageConfig.container())
               .sasToken(blobStorageConfig.sasToken())
               .buildAsyncClient();
@@ -76,13 +76,15 @@ public class EventProcessorConsumer {
               .consumerGroup(eventHubConfig.consumerGroup())
               .checkpointStore(new BlobCheckpointStore(blobContainerAsyncClient))
               .processEvent(eventContext -> {
-                 ask(this.actorRef, eventContext, Duration.ofSeconds(10));
-                 logger.info("Sent an event context");
+                  logger.info("attempting to send an event context");
+                  ask(this.actorRef, eventContext, Duration.ofSeconds(10)).toCompletableFuture().join();
+                  logger.info("Sent an event context");
               })
               .processError(errorContext -> {
-                 logger.error("EventProcessorClient had a hiccup", errorContext.getThrowable());
+                  logger.error("EventProcessorClient had a hiccup", errorContext.getThrowable());
               })
               .buildEventProcessorClient();
+      eventProcessorClient.start();
    }
 
    public void stop() {
