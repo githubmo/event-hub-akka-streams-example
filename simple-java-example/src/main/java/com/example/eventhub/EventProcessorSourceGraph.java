@@ -67,7 +67,7 @@ class EventProcessorSourceGraph extends GraphStage<SourceShape<EventOrErrorConte
                             try {
                                 blockingQueue.put(new EventOrErrorContext(eventContext));
                             } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
+                                logger.error("Internal blocking queue interrupted", e);
                             }
                             logger.info("Event queued to send");
                         })
@@ -76,7 +76,8 @@ class EventProcessorSourceGraph extends GraphStage<SourceShape<EventOrErrorConte
                             try {
                                 blockingQueue.put(new EventOrErrorContext(errorContext));
                             } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
+                                logger.error("Blocking queue got interrupted, closing EventProcessorClient", e);
+                                eventProcessorClient.stop();
                             }
                         })
                         .buildEventProcessorClient();
@@ -102,6 +103,18 @@ class EventProcessorSourceGraph extends GraphStage<SourceShape<EventOrErrorConte
                                     logger.info("Sending {} downstream", head.getContext().getEventData().getBodyAsString());
                                 }
                                 push(out, head);
+                            }
+
+                            @Override
+                            public void onDownstreamFinish() throws Exception, Exception {
+                                eventProcessorClient.stop();
+                                super.onDownstreamFinish();
+                            }
+
+                            @Override
+                            public void onDownstreamFinish(Throwable cause) throws Exception, Exception {
+                                eventProcessorClient.stop();
+                                super.onDownstreamFinish(cause);
                             }
                         });
             }

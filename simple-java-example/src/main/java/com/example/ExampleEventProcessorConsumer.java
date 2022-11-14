@@ -1,6 +1,7 @@
 package com.example;
 
 import akka.actor.ActorSystem;
+import akka.stream.KillSwitches;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -30,6 +31,7 @@ public class ExampleEventProcessorConsumer {
                     if (!e.isError()) {
                         var message = e.getContext().getEventData().getBodyAsString();
                         logger.info("Recieved the following message: {}", message);
+                        e.getContext().updateCheckpoint();
                         return message;
                     } else {
                         var message = "Error received with the following exception: " + e.getErrorContext().getThrowable().getMessage();
@@ -44,21 +46,22 @@ public class ExampleEventProcessorConsumer {
                 10
         );
 
-        eventProcessorConsumerSource.to(sink).run(system);
+        var killSwitches = KillSwitches.shared("example-kill-switch");
+
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
                 system.terminate();
                 try {
+                    killSwitches.abort(new RuntimeException("Program has been suspended"));
                     system.getWhenTerminated().toCompletableFuture().get(20, TimeUnit.SECONDS);
                 } catch(Exception e) {
                     logger.error("Could not complete system shutdown", e);
                 }
             }
         }));
-//        system.scheduler().scheduleOnce(Duration.ofSeconds(30), eventProcessorConsumer::stop, system.dispatcher());
-//        system.terminate();
-//        system.getWhenTerminated().toCompletableFuture().join();
-//        System.exit(0);
+
+        eventProcessorConsumerSource.via(killSwitches.flow()).to(sink).run(system);
+
     }
 }
