@@ -65,19 +65,17 @@ class EventProcessorSourceGraph extends GraphStage<SourceShape<EventOrErrorConte
                         .processEvent(eventContext -> {
 //                            logger.info("Queueing an event to send");
                             try {
-                                blockingQueue.put(new EventOrErrorContext(eventContext));
+                                if (eventContext != null) {
+                                    blockingQueue.put(new EventOrErrorContext(eventContext));
+                                }
                             } catch (InterruptedException e) {
                                 logger.error("Internal blocking queue interrupted, which probably means SIGTERM was sent to the application", e);
                             }
 //                            logger.info("Event queued to send");
                         })
                         .processError(errorContext -> {
-                            logger.error("EventProcessorClient had a hiccup", errorContext.getThrowable());
-                            try {
-                                blockingQueue.put(new EventOrErrorContext(errorContext));
-                            } catch (InterruptedException e) {
-                                logger.error("Blocking queue got interrupted, closing EventProcessorClient", e);
-                                eventProcessorClient.stop();
+                            if (errorContext != null) {
+                                logger.error("EventProcessorClient had a hiccup", errorContext.getThrowable());
                             }
                         })
                         .buildEventProcessorClient();
