@@ -1,4 +1,4 @@
-package com.example.eventhub;
+package com.example.eventhub.eventprocessor.single;
 
 import akka.NotUsed;
 import akka.stream.javadsl.Source;

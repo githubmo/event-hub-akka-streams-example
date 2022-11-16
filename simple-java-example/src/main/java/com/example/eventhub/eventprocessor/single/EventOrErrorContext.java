@@ -1,4 +1,4 @@
-package com.example.eventhub;
+package com.example.eventhub.eventprocessor.single;
 
 import com.azure.messaging.eventhubs.models.ErrorContext;
 import com.azure.messaging.eventhubs.models.EventContext;

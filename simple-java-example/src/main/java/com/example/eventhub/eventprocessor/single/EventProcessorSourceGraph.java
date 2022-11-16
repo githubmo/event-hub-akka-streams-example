@@ -1,4 +1,4 @@
-package com.example.eventhub;
+package com.example.eventhub.eventprocessor.single;
 
 import akka.stream.Attributes;
 import akka.stream.Outlet;
@@ -49,7 +49,7 @@ class EventProcessorSourceGraph extends GraphStage<SourceShape<EventOrErrorConte
     }
 
     @Override
-    public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception, Exception {
+    public GraphStageLogic createLogic(Attributes inheritedAttributes) {
         return new GraphStageLogic(shape) {
             private EventProcessorClient eventProcessorClient;
 
@@ -63,13 +63,13 @@ class EventProcessorSourceGraph extends GraphStage<SourceShape<EventOrErrorConte
                         .consumerGroup(eventHubConfig.consumerGroup())
                         .checkpointStore(new BlobCheckpointStore(blobContainerAsyncClient))
                         .processEvent(eventContext -> {
-                            logger.info("Queueing an event to send");
+//                            logger.info("Queueing an event to send");
                             try {
                                 blockingQueue.put(new EventOrErrorContext(eventContext));
                             } catch (InterruptedException e) {
-                                logger.error("Internal blocking queue interrupted", e);
+                                logger.error("Internal blocking queue interrupted, which probably means SIGTERM was sent to the application", e);
                             }
-                            logger.info("Event queued to send");
+//                            logger.info("Event queued to send");
                         })
                         .processError(errorContext -> {
                             logger.error("EventProcessorClient had a hiccup", errorContext.getThrowable());
@@ -97,11 +97,6 @@ class EventProcessorSourceGraph extends GraphStage<SourceShape<EventOrErrorConte
                             @Override
                             public void onPull() throws Exception {
                                 var head = blockingQueue.take();
-                                if (head.isError()) {
-                                    logger.error("Sending an ErrorContext with throwable {}", head.getErrorContext().getThrowable().getMessage());
-                                } else {
-                                    logger.info("Sending {} downstream", head.getContext().getEventData().getBodyAsString());
-                                }
                                 push(out, head);
                             }
 

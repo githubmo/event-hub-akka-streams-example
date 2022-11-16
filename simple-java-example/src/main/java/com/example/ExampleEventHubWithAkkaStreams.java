@@ -34,7 +34,7 @@ public class ExampleEventHubWithAkkaStreams {
 
         // events sent in batches
         var producerCompletionStage = Source
-                .from(Stream.generate(ExampleEventHubWithAkkaStreams::randomString).limit(1000).toList())
+                .from(Stream.generate(ExampleEventHubWithAkkaStreams::randomString).limit(5000).toList())
                 .map(s -> new EventHubStreamData(s.getBytes(StandardCharsets.UTF_8), Optional.of(s.substring(0, 1))))
                 .toMat(eventHubStreamProducer.batchEventSink, Keep.right())
                 .run(system);
